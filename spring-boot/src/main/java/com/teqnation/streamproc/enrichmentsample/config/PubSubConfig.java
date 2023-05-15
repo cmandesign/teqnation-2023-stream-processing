@@ -8,24 +8,27 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.cloud.spring.pubsub.core.PubSubTemplate;
 import com.google.cloud.spring.pubsub.integration.inbound.PubSubInboundChannelAdapter;
 import com.google.cloud.spring.pubsub.integration.outbound.PubSubMessageHandler;
-import com.google.cloud.spring.pubsub.support.converter.JacksonPubSubMessageConverter;
-import com.google.cloud.spring.pubsub.support.converter.PubSubMessageConverter;
-import com.teqnation.streamproc.enrichmentsample.model.Customer;
-import com.teqnation.streamproc.enrichmentsample.model.EnrichedOrderWithCustomerData;
-import com.teqnation.streamproc.enrichmentsample.model.Order;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.integration.channel.DirectChannel;
-import org.springframework.integration.config.EnableIntegration;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHandler;
 
 
 @Configuration
 public class PubSubConfig {
+
+    @Value("${pubsub.orders.subscription}")
+    private String ORDERS_SUBSCRIPTION;
+
+    @Value("${pubsub.customers.subscription}")
+    private String CUSTOMERS_SUBSCRIPTION;
+
+    @Value("${pubsub.enriched-orders.topic}")
+    private String ENRICHED_ORDERS_TOPIC;
 
     @Bean
     public PubSubInboundChannelAdapter ordersMessageChannelAdapter(
@@ -34,8 +37,8 @@ public class PubSubConfig {
 
         PubSubInboundChannelAdapter adapter =
                 new PubSubInboundChannelAdapter(
-                        pubSubTemplate, "orders");
-        adapter.setPayloadType(Order.class);
+                        pubSubTemplate, ORDERS_SUBSCRIPTION);
+
         adapter.setOutputChannel(ordersInputChannel);
 
         return adapter;
@@ -48,52 +51,35 @@ public class PubSubConfig {
 
 
     @Bean
-    public PubSubInboundChannelAdapter enrichedOrdersMessageChannelAdapter(
-            @Qualifier("enrichedOrdersInputChannel") MessageChannel enrichedOrdersInputChannel,
-            PubSubTemplate pubSubTemplate) {
-
-        PubSubInboundChannelAdapter adapter =
-                new PubSubInboundChannelAdapter(
-                        pubSubTemplate, "enrichedOrdersWithCustomersDataTopic");
-        adapter.setPayloadType(EnrichedOrderWithCustomerData.class);
-        adapter.setOutputChannel(enrichedOrdersInputChannel);
-
-        return adapter;
-    }
-
-    @Bean
-    public MessageChannel enrichedOrdersInputChannel() {
-        return new DirectChannel();
-    }
-
-    @Bean
     public PubSubInboundChannelAdapter customersMessageChannelAdapter(
             @Qualifier("customersInputChannel") MessageChannel customersInputChannel,
             PubSubTemplate pubSubTemplate) {
 
         PubSubInboundChannelAdapter adapter =
                 new PubSubInboundChannelAdapter(
-                        pubSubTemplate, "customers");
-        adapter.setPayloadType(Customer.class);
+                        pubSubTemplate, CUSTOMERS_SUBSCRIPTION);
+//        adapter.setAckMode(AckMode.AUTO_ACK);
+//        adapter.setPayloadType(Customer.class);
         adapter.setOutputChannel(customersInputChannel);
 
         return adapter;
     }
 
-    @Bean
-    @Primary
-    public PubSubMessageConverter pubSubMessageConverter(ObjectMapper objectMapper) {
-        return new JacksonPubSubMessageConverter(objectMapper);
-    }
+//    @Bean
+//    @Primary
+//    public PubSubMessageConverter pubSubMessageConverter(ObjectMapper objectMapper) {
+//        return new JacksonPubSubMessageConverter(objectMapper);
+//    }
 
-    @Bean
-    @Primary
-    public ObjectMapper objectMapper() {
+    //    @Bean
+//    @Primary
+    public static ObjectMapper objectMapper() {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
         mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+        mapper.disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES);
         return mapper;
     }
 
@@ -105,7 +91,7 @@ public class PubSubConfig {
     @Bean
     @ServiceActivator(inputChannel = "outputChannel")
     public MessageHandler messageSender(PubSubTemplate pubsubTemplate) {
-        PubSubMessageHandler handler = new PubSubMessageHandler(pubsubTemplate, "enrichedOrdersWithCustomersDataTopic");
+        PubSubMessageHandler handler = new PubSubMessageHandler(pubsubTemplate, ENRICHED_ORDERS_TOPIC);
         return handler;
     }
 

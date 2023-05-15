@@ -1,0 +1,7 @@
+runtime: java17
+
+instance_class: B4
+manual_scaling:
+  instances: 1
+env_variables:
+  spring_profiles_active: "prod"

@@ -1,5 +1,6 @@
 package com.teqnation.streamproc.enrichmentsample.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.teqnation.streamproc.enrichmentsample.model.Customer;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.integration.annotation.Filter;
@@ -7,7 +8,7 @@ import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.messaging.Message;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import static com.teqnation.streamproc.enrichmentsample.config.PubSubConfig.objectMapper;
 
 @Service
 public class customersMessageService {
@@ -19,14 +20,16 @@ public class customersMessageService {
     }
 
     @Filter(inputChannel = "customersInputChannel", outputChannel = "filteredCustomersInputChannel")
-    boolean filter(Message<Customer> message) {
-        List<String> whitelistListOfCities = List.of("New York", "Los Angeles");
-//        return whitelistListOfCities.contains(message.getPayload().city());
+    boolean filter(Message<String> message) {
+        // You can filter some of the messages here
+        // List<String> whitelistListOfCities = List.of("New York", "Los Angeles");
+        // return whitelistListOfCities.contains(message.getPayload().city());
         return true;
     }
-    @ServiceActivator(inputChannel = "filteredCustomersInputChannel")
-    public void customersMessageReceiver(Customer customer) {
 
+    @ServiceActivator(inputChannel = "filteredCustomersInputChannel")
+    public void customersMessageReceiver(String message) throws JsonProcessingException {
+        Customer customer = objectMapper().readValue(message, Customer.class);
         System.out.println("Message arrived! Message: " + customer);
         redisTemplate.opsForValue().set(String.valueOf(customer.id()), customer);
     }

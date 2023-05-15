@@ -26,3 +26,9 @@ export PUBSUB_EMULATOR_HOST=localhost:8432
 
 python3 publish.py my-project-id orders customers.jsonl
 ```
+```bash
+
+python3 publish.py teqnation-2023-stream-proc orders customers.jsonl
+```
+
+
