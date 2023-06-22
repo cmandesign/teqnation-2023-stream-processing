@@ -17,7 +17,7 @@
         <bigquery.version>v2-rev374-1.22.0</bigquery.version>
         <google-clients.version>1.35.2</google-clients.version>
         <hamcrest.version>2.2</hamcrest.version>
-        <jackson.version>2.13.4</jackson.version>
+        <jackson.version>2.13.4.2</jackson.version>
         <log4j.version>2.19.0</log4j.version>
         <junit.version>5.9.1</junit.version>
         <junit4.version>4.13.2</junit4.version>
